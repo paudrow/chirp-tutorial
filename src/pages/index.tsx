@@ -13,7 +13,7 @@ dayjs.extend(relativeTime);
 const CreatePostWizard = () => {
   const {user} = useUser();
 
-  if (!user) return null;
+  if (!user || !user.username) return null;
 
   return (
     <div className="flex w-full gap-3">
