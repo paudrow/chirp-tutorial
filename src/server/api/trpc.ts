@@ -30,13 +30,6 @@ export const createTRPCContext = (opts: CreateNextContextOptions) => {
   const { req } = opts;
   const {userId} = getAuth(req)
 
-  if (!userId) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "You must be logged in to do that.",
-    })
-  }
-
   return {
     prisma,
     currentUserId: userId,

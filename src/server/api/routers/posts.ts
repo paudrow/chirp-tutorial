@@ -5,15 +5,8 @@ import { Redis } from "@upstash/redis";
 import { createTRPCRouter, privateProcedure, publicProcedure } from "@/server/api/trpc";
 import clerkClient, { User } from "@clerk/clerk-sdk-node";
 import { TRPCError } from "@trpc/server";
+import { filterUserFromClient } from "@/server/helpers/filterUserFromClient";
 
-
-const filterUserFromClient = (user: User) => {
-  return {
-    id: user.id,
-    username: user.username,
-    profileImageUrl: user.profileImageUrl,
-  }
-}
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
