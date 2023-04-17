@@ -10,7 +10,7 @@ const ProfilePage: NextPage<{username: string}> = ({username}) => {
 
   const {data: user } = api.profile.getUserByUsername.useQuery({ username });
 
-  if (!user) return <div>User not found</div>
+  if (!user || !user.username) return <div>User not found</div>
 
   return (
     <>
@@ -62,7 +62,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
   }
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
+export const getStaticPaths: GetStaticPaths = () => {
   return {
     paths: [],
     fallback: "blocking",
