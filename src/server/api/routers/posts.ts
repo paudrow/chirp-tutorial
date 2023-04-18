@@ -6,7 +6,36 @@ import { createTRPCRouter, privateProcedure, publicProcedure } from "@/server/ap
 import clerkClient, { User } from "@clerk/clerk-sdk-node";
 import { TRPCError } from "@trpc/server";
 import { filterUserFromClient } from "@/server/helpers/filterUserFromClient";
+import type { Post } from "@prisma/client";
 
+
+const addUserDataToPosts = async (posts: Post[]) => {
+  const users = (
+    await clerkClient.users.getUserList({
+      userId: posts.map((post) => post.authorId),
+      limit: 100,
+    })
+  ).map(filterUserFromClient);
+
+  return posts.map((post) => {
+    const author = users.find((user) => user.id === post.authorId);
+
+    if (!author || !author.username) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Could not find author for post",
+      });
+    }
+
+    return {
+      post,
+      author: {
+        ...author,
+        username: author.username,
+      },
+    };
+  });
+}
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
@@ -22,33 +51,28 @@ export const postsRouter = createTRPCRouter({
         createdAt: "desc",
       },
     });
-
-    const users = (
-      await clerkClient.users.getUserList({
-        userId: posts.map((post) => post.authorId),
-        limit: 100,
-      })
-    ).map(filterUserFromClient);
-
-    return posts.map((post) => {
-      const author = users.find((user) => user.id === post.authorId);
-
-      if (!author || !author.username) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Could not find author for post",
-        });
-      }
-
-      return {
-        post,
-        author: {
-          ...author,
-          username: author.username,
-        },
-      };
-    });
+    return addUserDataToPosts(posts);
   }),
+
+  getPostByUserId: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+    const posts = await ctx.prisma.post.findMany({
+      where: {
+        authorId: input.userId,
+      },
+      take: 100,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return addUserDataToPosts(posts);
+  }),
+
   create: privateProcedure
     .input(
       z.object({
@@ -57,8 +81,6 @@ export const postsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const authorId = ctx.currentUserId;
-
-      
       const {success} = await ratelimit.limit(authorId);
       if (!success) {
         throw new TRPCError({
