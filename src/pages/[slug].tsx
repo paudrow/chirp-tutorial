@@ -1,10 +1,12 @@
-import { GetStaticPaths, GetStaticProps, InferGetStaticPropsType, type NextPage } from "next";
+import type { GetStaticPaths, GetStaticProps, NextPage } from "next";
 import Head from "next/head";
 
 import { api } from "@/utils/api";
 import { PageLayout } from "@/components/layout";
 import Image from "next/image";
 import { PostView } from "@/components/postview";
+import { generateSsgHelper } from "@/server/helpers/generateSsgHelper";
+import { LoadingPage } from "@/components/loading";
 
 const ProfileFeed = (props: {userId: string}) => {
   const {data, isLoading } = api.posts.getPostByUserId.useQuery({
@@ -54,19 +56,9 @@ const ProfilePage: NextPage<{username: string}> = ({username}) => {
   );
 };
 
-import { createServerSideHelpers } from '@trpc/react-query/server';
-import { prisma } from "@/server/db";
-import { appRouter } from "@/server/api/root";
-import superjson from "superjson";
-import { LoadingPage } from "@/components/loading";
 
 export const getStaticProps: GetStaticProps = async (context) => {
-  const ssg = createServerSideHelpers({
-    router: appRouter,
-    ctx: {prisma, currentUserId: null},
-    transformer: superjson,
-  });
-
+  const ssg = generateSsgHelper()
   const slug = context.params?.slug;
   if (typeof slug !== "string") throw new Error("Slug is not a string");
   const username = slug.replace("@", "");
