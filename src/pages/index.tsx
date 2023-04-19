@@ -70,7 +70,7 @@ const CreatePostWizard = () => {
       )}
       {isPosting && (
         <div className="flex items-center justify-center">
-          <LoadingSpinner />
+          <LoadingSpinner size={20}/>
         </div>
       )
     }
